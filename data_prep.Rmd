@@ -1,0 +1,57 @@
+---
+title: "Project 2 Data Manipulation"
+author: "Nir Ben Laufer"
+date: '2024-05-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library(tidyverse)
+library(openxlsx)
+```
+
+#read in data
+```{r}
+#use if u need to set ur directory
+getwd()
+
+anthropometric <- read_excel("Data/Anthropometric_Data.xlsx")
+
+body_comp <- read_excel("Data/Body_Composition_Data.xlsx")
+
+```
+
+#data manipulation
+```{r}
+#pivot body_comp data
+
+# Transpose the data
+body_comp_transposed <- as.data.frame(t(body_comp))
+
+# The first row should become the header
+colnames(body_comp_transposed) <- body_comp_transposed[1,]
+body_comp_transposed <- body_comp_transposed[-1,]
+
+#rename col to be able to left join
+colnames(body_comp_transposed)[colnames(body_comp_transposed) == "STUDENT NUMBER"] <- "Student #"
+
+# change student id col to char to left join
+body_comp_transposed <- body_comp_transposed %>%
+  mutate(`Student #` = as.numeric(as.integer(`Student #`)))
+```
+
+#merge dataset into 1
+```{r}
+
+combined_data <- anthropometric %>%
+  left_join(body_comp_transposed, by = "Student #") %>%
+  select(-SCHOOL, -GENDER)
+
+```
+
+#export as .xlsx
+```{r}
+write.xlsx(combined_data, "project_2_data")
+```

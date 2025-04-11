@@ -1,0 +1,185 @@
+---
+title: "Project 2 Analysis"
+author: "Nir Ben Laufer"
+date: '2024-05-13'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(readxl)
+library(corrplot)
+library(tidyverse)
+library(lme4)
+```
+
+
+#read in combined dataset
+```{r}
+
+mydata <- read_excel("Data/Combined_Data.xlsx")
+
+```
+
+# Cleaning Dataset
+
+```{r}
+# Removing students 1121, 2236, 3332, 3333, 3343
+data_clean <- mydata[-c(11, 60, 87, 88, 98), ]
+
+data_clean$"Waist fold" <- as.numeric(unlist(data_clean$"Waist fold"))
+data_clean$"Dom. Strength" <- as.numeric(unlist(data_clean$"Dom. Strength"))
+data_clean$School <- as.factor(unlist(data_clean$School))
+data_clean$"AGE" <- as.numeric(unlist(data_clean$"AGE"))
+data_clean$"BMR (kcal)" <- as.numeric(unlist(data_clean$"BMR (kcal)"))
+data_clean$"FAT%" <- as.numeric(unlist(data_clean$"FAT%"))
+data_clean$"FAT MASS (kg)" <- as.numeric(unlist(data_clean$"FAT MASS (kg)"))
+data_clean$"FFM (kg)" <- as.numeric(unlist(data_clean$"FFM (kg)"))
+data_clean$"TBW (kg)" <- as.numeric(unlist(data_clean$"TBW (kg)"))
+data_clean$"Whole Body (Ω)" <- as.numeric(unlist(data_clean$"Whole Body (Ω)"))
+data_clean$"Right Leg (Ω)" <- as.numeric(unlist(data_clean$"Right Leg (Ω)"))
+data_clean$"Left Leg (Ω)" <- as.numeric(unlist(data_clean$"Left Leg (Ω)"))
+data_clean$"Right Arm (Ω)" <- as.numeric(unlist(data_clean$"Right Arm (Ω)"))
+data_clean$"Left Arm (Ω)" <- as.numeric(unlist(data_clean$"Left Arm (Ω)"))
+data_clean$"Fat% - RL" <- as.numeric(unlist(data_clean$"Fat% - RL"))
+data_clean$"Fat Mass (kg) - RL" <- as.numeric(unlist(data_clean$"Fat Mass (kg) - RL"))
+data_clean$"FFM (kg) - RL" <- as.numeric(unlist(data_clean$"FFM (kg) - RL"))
+data_clean$"Predicted Muscle Mass (kg) - RL" <- as.numeric(unlist(data_clean$"Predicted Muscle Mass (kg) - RL"))
+data_clean$"Fat% - LL" <- as.numeric(unlist(data_clean$"Fat% - LL"))
+data_clean$"Fat Mass (kg) - LL" <- as.numeric(unlist(data_clean$"Fat Mass (kg) - LL"))
+data_clean$"FFM (kg) - LL" <- as.numeric(unlist(data_clean$"FFM (kg) - LL"))
+data_clean$"Predicted Muscle Mass (kg) - LL" <- as.numeric(unlist(data_clean$"Predicted Muscle Mass (kg) - LL"))
+data_clean$"Fat% - RA" <- as.numeric(unlist(data_clean$"Fat% - RA"))
+data_clean$"Fat Mass (kg) - RA" <- as.numeric(unlist(data_clean$"Fat Mass (kg) - RA"))
+data_clean$"FFM (kg) - RA" <- as.numeric(unlist(data_clean$"FFM (kg) - RA"))
+data_clean$"Predicted Muscle Mass (kg) - RA" <- as.numeric(unlist(data_clean$"Predicted Muscle Mass (kg) - RA"))
+data_clean$"Fat% - LA" <- as.numeric(unlist(data_clean$"Fat% - LA"))
+data_clean$"Fat Mass (kg) - LA" <- as.numeric(unlist(data_clean$"Fat Mass (kg) - LA"))
+data_clean$"FFM (kg) - LA" <- as.numeric(unlist(data_clean$"FFM (kg) - LA"))
+data_clean$"Predicted Muscle Mass (kg) - LA" <- as.numeric(unlist(data_clean$"Predicted Muscle Mass (kg) - LA"))
+data_clean$"Fat% - T" <- as.numeric(unlist(data_clean$"Fat% - T"))
+data_clean$"Fat Mass (kg) - T" <- as.numeric(unlist(data_clean$"Fat Mass (kg) - T"))
+data_clean$"FFM (kg) - T" <- as.numeric(unlist(data_clean$"FFM (kg) - T"))
+data_clean$"Predicted Muscle Mass (kg) - T" <- as.numeric(unlist(data_clean$"Predicted Muscle Mass (kg) - T"))
+```
+
+```{r}
+data_clean <- data_clean %>%
+  rename(
+    height_cm = `Height (cm)`,
+    weight_kg = `Weight (Kg)`,
+    bmi = BMI,
+    neck_circumf_cm = `Neck Circumf (cm)`,
+    waist_1_cm = `Waist I (cm)`,
+    waist_2_cm = `Waist II (cm)`,
+    hip_cm = `Hip (cm)`,
+    arm_length_cm = `Arm length (cm)`,
+    arm_circumf_cm = `Arm Circumf (cm)`,
+    wrist_cm = `Wrist (cm)`,
+    arm_fold = `Arm fold`,
+    waist_fold = `Waist fold`,
+    back_fold = `Back fold`,
+    dom_strength = `Dom. Strength`,
+    non_dom_strength = `Non-Dom. strength`,
+    body_type = `BODY TYPE`,
+    bmr_kcal = `BMR (kcal)`,
+    fat_percent = `FAT%`,
+    fat_mass_kg = `FAT MASS (kg)`,
+    ffm_kg = `FFM (kg)`,
+    tbw_kg = `TBW (kg)`,
+    whole_body_omega = `Whole Body (Ω)`,
+    right_leg_omega = `Right Leg (Ω)`,
+    left_leg_omega = `Left Leg (Ω)`,
+    right_arm_omega = `Right Arm (Ω)`,
+    left_arm_omega = `Left Arm (Ω)`,
+    fat_percent_RL = `Fat% - RL`,
+    fat_mass_kg_RL = `Fat Mass (kg) - RL`,
+    ffm_kg_RL = `FFM (kg) - RL`,
+    pred_mm_kg_RL = `Predicted Muscle Mass (kg) - RL`,
+    fat_percent_LL = `Fat% - LL`,
+    fat_mass_kg_LL = `Fat Mass (kg) - LL`,
+    ffm_kg_LL = `FFM (kg) - LL`,
+    pred_mm_kg_LL = `Predicted Muscle Mass (kg) - LL`,
+    fat_percent_RA = `Fat% - RA`,
+    fat_mass_kg_RA = `Fat Mass (kg) - RA`,
+    ffm_kg_RA = `FFM (kg) - RA`,
+    pred_mm_kg_RA = `Predicted Muscle Mass (kg) - RA`,
+    fat_percent_LA = `Fat% - LA`,
+    fat_mass_kg_LA = `Fat Mass (kg) - LA`,
+    ffm_kg_LA = `FFM (kg) - LA`,
+    pred_mm_kg_LA = `Predicted Muscle Mass (kg) - LA`,
+    fat_percent_T = `Fat% - T`,
+    fat_mass_kg_T = `Fat Mass (kg) - T`,
+    ffm_kg_T = `FFM (kg) - T`,
+    pred_mm_kg_T = `Predicted Muscle Mass (kg) - T`
+  )
+```
+
+```{r}
+data_clean
+```
+
+# Investigating Correlation
+
+```{r}
+p <- data_clean %>%
+  select(height_cm:non_dom_strength)
+
+p
+```
+
+```{r}
+corrplot(cor(p, use = "pairwise.complete.obs"))
+```
+
+```{r}
+manova_model1 <- manova(cbind(height_cm, waist_fold) ~ School, data = data_clean)
+summary(manova_model1)
+
+#manova(cbind("Arm fold", "Arm length (cm)", ))
+```
+
+
+```{r}
+#manova(cbind(height,weight,arm,y4)~as.factor(rootstock),data=mydata)
+```
+
+```{r}
+
+data_clean <- data_clean %>%
+  mutate(dom_non_dom_diff = (dom_strength - non_dom_strength),
+         waist_diff = (waist_2_cm - waist_1_cm),
+         total_impedance = (whole_body_omega + right_leg_omega + left_leg_omega + right_arm_omega + left_arm_omega))
+
+
+```
+
+#modeling
+```{r}
+#Anthropometric
+base_model <- lm(bmi ~ School, data = data_clean)
+
+#added age as random effect
+model1 <- lmer(bmi ~ School + (1 | `Age (yrs)`), data = data_clean)
+
+#Added gender as a random effect
+summary(lmer(back_fold ~ School + (1 | `Age (yrs)`) + (1 | Gender), data = data_clean))
+#summary(model2)
+
+```
+
+```{r}
+#Body_Composition
+lm(bmr_kcal ~ School, data = data_clean)
+
+#added age as random effect
+model1 <- lmer(bmr_kcal ~ School + (1 | `Age (yrs)`), data = data_clean)
+
+#Added gender as a random effect
+summary(lmer(fat_percent_RA ~ School + (1 | `Age (yrs)`), data = data_clean))
+
+#summary(model2)
+
+```
+
